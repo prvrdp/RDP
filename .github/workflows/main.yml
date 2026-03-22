@@ -1,26 +1,18 @@
-name: Phoenix V100 (Linux Dual-Turbo)
+name: Phoenix V100 (5-Machine Matrix)
 
 on:
   workflow_dispatch:
   schedule:
     - cron: '0 */6 * * *'
 
-concurrency:
-  # We add the runner index to the group name so they don't cancel each other!
-  group: ${{ github.workflow }}-${{ github.run_id }}
-  cancel-in-progress: true
-
 jobs:
   run-loop:
     runs-on: ubuntu-latest
     timeout-minutes: 350
-    
-    # --- SCALE UP LOGIC ---
     strategy:
       matrix:
-        machine-id: [1, 2] # This fires up 2 separate virtual machines
-      fail-fast: false      # If machine 1 crashes, machine 2 keeps running
-    # ----------------------
+        machine-id: [1, 2, 3, 4, 5]
+      fail-fast: false
 
     steps:
     - name: Checkout Code
@@ -33,7 +25,20 @@ jobs:
 
     - name: Install Dependencies
       run: |
-        pip install selenium selenium-stealth
+        pip install selenium==4.9.0 selenium-stealth webdriver-manager
+
+    - name: 🔥 Run Phoenix Engine
+      env:
+        INSTA_COOKIE: ${{ secrets.INSTA_COOKIE }}
+        TARGET_THREAD_ID: ${{ secrets.TARGET_THREAD_ID }}
+        MESSAGES: ${{ secrets.MESSAGES }}
+        MACHINE_INDEX: ${{ matrix.machine-id }}
+      run: |
+        while true; do
+          python -u main.py
+          echo "⚠️ Engine Exit. Respawning in 5s..."
+          sleep 5
+        done
 
     - name: 🔥 Run Phoenix Engine (Machine ${{ matrix.machine-id }})
       env:
