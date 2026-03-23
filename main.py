@@ -19,13 +19,10 @@ from webdriver_manager.chrome import ChromeDriverManager
 # --- 🚀 ENGINE CONFIGURATION ---
 THREADS = 3             
 TOTAL_DURATION = 25000  
-JS_DELAY = 30 
+JS_DELAY = 40 # Slightly increased to 40ms for better stability
 
 sys.stdout.reconfigure(encoding='utf-8')
-
-# Global variable to store the driver path once installed
 DRIVER_PATH = None
-INSTALL_LOCK = threading.Lock()
 
 def log_status(agent_id, msg):
     timestamp = datetime.datetime.now().strftime("%H:%M:%S")
@@ -33,13 +30,6 @@ def log_status(agent_id, msg):
 
 def get_driver(agent_id):
     global DRIVER_PATH
-    
-    # Thread-safe installation
-    with INSTALL_LOCK:
-        if DRIVER_PATH is None:
-            print(f"📦 Installing Chrome Driver...", flush=True)
-            DRIVER_PATH = ChromeDriverManager().install()
-
     chrome_options = Options()
     chrome_options.add_argument("--headless=new") 
     chrome_options.add_argument("--no-sandbox") 
@@ -76,8 +66,6 @@ def run_js_engine(agent_id, cookie, target_id, target_name):
         driver = get_driver(agent_id)
         driver.get("https://www.instagram.com/")
         
-        # --- 🛠️ BULLETPROOF SID CLEANER ---
-        # Simply strips everything but the core ID
         sid = cookie.replace("sessionid=", "").strip().split(";")[0]
         
         try:
@@ -88,19 +76,29 @@ def run_js_engine(agent_id, cookie, target_id, target_name):
 
         driver.get(f"https://www.instagram.com/direct/t/{target_id}/")
         
-        log_status(agent_id, "⏳ Waiting for chat...")
-        time.sleep(12) 
+        log_status(agent_id, "⏳ Waiting for chat to load...")
+        time.sleep(15) # Increased wait for slow GitHub runners
 
+        # AGGRESSIVE JS PAYLOAD
         js_payload = f"""
         (async function() {{
             const targetName = "{target_name}";
             const delay = {JS_DELAY};
             const emojis = ["👑", "⚡", "🔥", "🦈", "🦁", "💎", "⚔️", "🔱", "🧿", "🌪️", "🐍", "🦍"];
 
+            function getMessageBox() {{
+                // Scans for common IG mobile DM selectors
+                return document.querySelector('textarea') || 
+                       document.querySelector('[role="textbox"]') || 
+                       document.querySelector('[contenteditable="true"]') ||
+                       document.querySelector('.xat24cr'); // Common IG dynamic class
+            }}
+
             while (true) {{
                 try {{
-                    const msgBox = document.querySelector('textarea, [role="textbox"], [contenteditable="true"]');
+                    const msgBox = getMessageBox();
                     if (!msgBox) {{
+                        console.log("Searching for box...");
                         await new Promise(r => setTimeout(r, 1000));
                         continue;
                     }}
@@ -109,16 +107,24 @@ def run_js_engine(agent_id, cookie, target_id, target_name):
                     const lines = Array(20).fill(`【 ${{targetName}} 】 SAY P R V R बाप ${{emoji}} ________________________/`).join('\\n');
                     const finalMsg = lines + "\\n⚡ ID: " + Math.floor(Math.random() * 999999);
 
+                    // Force Focus and Click to wake up the listener
                     msgBox.focus();
+                    msgBox.click();
+                    
+                    // Inject Text
                     document.execCommand('insertText', false, finalMsg);
                     
+                    // Dispatch Enter Key
                     const enterEvent = new KeyboardEvent('keydown', {{
-                        bubbles: true, cancelable: true, keyCode: 13, key: 'Enter'
+                        bubbles: true, cancelable: true, keyCode: 13, key: 'Enter', which: 13
                     }});
                     msgBox.dispatchEvent(enterEvent);
                     
+                    // Fallback: If the text is still there, try a manual 'Input' event
+                    msgBox.dispatchEvent(new Event('input', {{ bubbles: true }}));
+
                     await new Promise(r => setTimeout(r, delay));
-                }} catch (e) {{ 
+                } catch (e) {{ 
                     console.error("JS Error", e); 
                 }}
             }}
@@ -131,7 +137,7 @@ def run_js_engine(agent_id, cookie, target_id, target_name):
         # Monitor loop
         end_time = time.time() + TOTAL_DURATION
         while time.time() < end_time:
-            time.sleep(15)
+            time.sleep(20)
 
     except Exception as e:
         log_status(agent_id, f"❌ Engine Crash: {e}")
@@ -148,17 +154,13 @@ def main():
         print("❌ Missing Secrets!")
         return
 
-    # Pre-install driver before starting threads to avoid "Zip File" errors
     global DRIVER_PATH
+    print("📦 Installing Chrome Driver...", flush=True)
     DRIVER_PATH = ChromeDriverManager().install()
 
     with ThreadPoolExecutor(max_workers=THREADS) as executor:
         for i in range(THREADS):
-            executor.submit(run_life_cycle_dummy, i+1, cookie, target_id, target_name)
-
-# Helper to route the executor
-def run_life_cycle_dummy(agent_id, cookie, target_id, target_name):
-    run_js_engine(agent_id, cookie, target_id, target_name)
+            executor.submit(run_js_engine, i+1, cookie, target_id, target_name)
 
 if __name__ == "__main__":
     main()
