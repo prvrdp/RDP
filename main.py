@@ -80,7 +80,7 @@ def run_prvr_engine(agent_id, cookie, target_id, target_name):
         log_status(agent_id, "⏳ Waiting 15s for Chat to Load...")
         time.sleep(15) 
 
-        # --- ⚡ 200ms AUTOMA-SYNC PAYLOAD ---
+        # --- ⚡ THE AUTOMA-SYNC PAYLOAD ---
         js_payload = f"""
         (async function() {{
             const targetName = "{target_name}";
@@ -110,21 +110,35 @@ def run_prvr_engine(agent_id, cookie, target_id, target_name):
                     const block = Array(30).fill(line).join('\\n');
                     const finalMsg = block + "\\n⚡ ID: " + traceID;
 
-                    // Click & Focus (Crucial for Instagram to register the input)
+                    // 1. Focus the box
                     msgBox.focus();
-                    msgBox.click();
                     
+                    // 2. Inject the text
                     document.execCommand('insertText', false, finalMsg);
                     
-                    const enterEvent = new KeyboardEvent('keydown', {{
-                        bubbles: true, cancelable: true, keyCode: 13, key: 'Enter', which: 13
-                    }});
-                    msgBox.dispatchEvent(enterEvent);
+                    // 3. Trigger 'input' event so Instagram knows text is there (reveals Send button)
+                    msgBox.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                    
+                    // Tiny wait for the Send button to appear in the DOM
+                    await new Promise(r => setTimeout(r, 50));
+                    
+                    // 4. Click the Send Button (Using your Automa selector & fallbacks)
+                    const sendBtn = document.querySelector('div.xjyslct') || 
+                                    Array.from(document.querySelectorAll('div[role="button"]')).find(el => el.textContent.trim().toLowerCase() === 'send') ||
+                                    Array.from(document.querySelectorAll('button')).find(el => el.textContent.trim().toLowerCase() === 'send');
+                    
+                    if (sendBtn) {{
+                        sendBtn.click();
+                    }} else {{
+                        // Fallback: Try Enter Key if button is hidden
+                        const enterEvent = new KeyboardEvent('keydown', {{ bubbles: true, cancelable: true, keyCode: 13, key: 'Enter' }});
+                        msgBox.dispatchEvent(enterEvent);
+                    }}
 
-                    // Wait exactly 200ms before doing it again (Matches Automa)
+                    // Wait exactly 200ms before looping (Matches Automa)
                     await new Promise(r => setTimeout(r, delay));
                     
-                    // Clear memory every loop
+                    // Clear memory
                     console.clear();
                 }} catch (e) {{ 
                     console.error("JS Loop Error", e); 
