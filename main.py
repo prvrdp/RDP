@@ -2,15 +2,13 @@ import os, time, re, random, datetime, threading, sys, gc, tempfile
 from concurrent.futures import ThreadPoolExecutor
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 
-# --- 🚀 V111 TRIPLE-BUFFERED ENGINE ---
+# --- 🚀 V112 SATURATION ENGINE ---
 THREADS = 2 
-BURST_MIN = 0.005  # 🔥 5ms (Hardware Limit)
-BURST_MAX = 0.015  # 🔥 15ms
+STRIKE_SPEED_MS = 20  # 🔥 THE LIMIT: 20ms pulse (50 messages per second)
 SESSION_MAX_SEC = 120    
 
 def get_driver(agent_id):
@@ -19,7 +17,7 @@ def get_driver(agent_id):
     options.add_argument("--no-sandbox") 
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
-    options.add_argument("--disable-v8-idle-tasks") # 🔥 Disables JS pauses
+    options.add_argument("--disable-v8-idle-tasks")
     options.add_argument("--blink-settings=imagesEnabled=false")
     
     mobile = {
@@ -32,57 +30,54 @@ def get_driver(agent_id):
 def run_life_cycle(agent_id, cookie, target_id, target_name):
     while True:
         driver = None
-        session_start = time.time()
         try:
             driver = get_driver(agent_id)
             driver.get("https://www.instagram.com/")
             sid = re.search(r'sessionid=([^;]+)', cookie).group(1) if 'sessionid=' in cookie else cookie
             driver.add_cookie({'name': 'sessionid', 'value': sid.strip(), 'domain': '.instagram.com'})
             driver.get(f"https://www.instagram.com/direct/t/{target_id}/")
-            time.sleep(6)
+            time.sleep(8) # Allow full Lexical engine load
 
             # 🎯 CACHE THE BOX
             box = driver.find_element(By.XPATH, "//div[@role='textbox']|//textarea")
 
-            while (time.time() - session_start) < SESSION_MAX_SEC:
-                # 🔄 Generate 3 Unique Blocks in Python 
-                emojis = ["👑", "⚡", "🔥", "🦈", "🦁", "💎", "⚔️", "🔱"]
+            # 🔥 THE SATURATION INJECTOR (Recursive Loop)
+            # This starts a process INSIDE Chrome that Python doesn't need to manage.
+            driver.execute_script(f"""
+                const el = arguments[0];
+                const targetName = "{target_name}";
+                const speed = {STRIKE_SPEED_MS};
+                const emojis = ["👑", "⚡", "🔥", "🦈", "🦁", "💎", "⚔️", "🔱"];
                 
-                def make_block():
-                    line = f"【 {target_name} 】 SAY P R V R बाप {random.choice(emojis)} ________________________/"
-                    return "\\n".join([line for _ in range(20)]) + f"\\n⚡ ID: {random.randint(1000, 9999)}"
+                if (window.prvrInterval) clearInterval(window.prvrInterval);
 
-                b1, b2, b3 = make_block(), make_block(), make_block()
+                window.prvrInterval = setInterval(() => {{
+                    const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+                    const salt = Math.random().toString(36).substring(7).toUpperCase();
+                    const line = `【 ${{targetName}} 】 SAY P R V R बाप ${{emoji}} ________________________/`;
+                    const block = Array(20).fill(line).join('\\n') + "\\n⚡ ID: " + salt;
 
-                try:
-                    # ⚡ TRIPLE-TAP INJECTION (The "Slingshot")
-                    driver.execute_script("""
-                        var el = arguments[0];
-                        var msgs = [arguments[1], arguments[2], arguments[3]];
-                        
-                        msgs.forEach((txt, index) => {
-                            setTimeout(() => {
-                                el.focus();
-                                document.execCommand('insertText', false, txt);
-                                // Native Event Dispatcher (Faster than send_keys)
-                                el.dispatchEvent(new KeyboardEvent('keydown', {
-                                    bubbles: true, cancelable: true, key: 'Enter', code: 'Enter', keyCode: 13
-                                }));
-                                // Small clear to keep the box responsive
-                                if (index === msgs.length - 1) {
-                                    setTimeout(() => { el.innerHTML = ""; }, 10);
-                                }
-                            }, index * 2); // 2ms gap between each block inside the browser
-                        });
-                    """, box, b1, b2, b3)
+                    el.focus();
+                    document.execCommand('insertText', false, block);
                     
-                except:
-                    break 
+                    // Native Dispatch (Instant)
+                    const enter = new KeyboardEvent('keydown', {{
+                        bubbles: true, cancelable: true, key: 'Enter', code: 'Enter', keyCode: 13
+                    }});
+                    el.dispatchEvent(enter);
+
+                    // Immediate DOM Purge to keep RAM 0
+                    setTimeout(() => {{ if(el) el.innerHTML = ""; }}, 5);
+                }}, speed);
+            """, box)
+
+            print(f"[{agent_id}] 🔥 Saturation Engine Engaged at {STRIKE_SPEED_MS}ms", flush=True)
+            
+            # Python just hangs out and keeps the browser alive for 2 minutes
+            time.sleep(SESSION_MAX_SEC)
                 
-                # ⚡ Absolute minimum thread sleep
-                time.sleep(random.uniform(BURST_MIN, BURST_MAX))
-                
-        except: pass
+        except Exception as e:
+            print(f"⚠️ Error: {e}")
         finally:
             if driver: driver.quit()
             gc.collect()
