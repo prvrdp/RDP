@@ -7,10 +7,10 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 
-# --- 🚀 V107 INTERNAL MEMORY STRIKER ---
+# --- 🚀 V108 FIRE & FORGET ---
 THREADS = 2 
-BURST_MIN = 0.01  # ⚡ 10ms (System Floor)
-BURST_MAX = 0.03  # ⚡ 30ms
+BURST_MIN = 0.01  # ⚡ 10ms
+BURST_MAX = 0.02  # ⚡ 20ms
 SESSION_MAX_SEC = 120    
 
 sys.stdout.reconfigure(encoding='utf-8')
@@ -31,7 +31,7 @@ def get_driver(agent_id):
         }
         options.add_experimental_option("mobileEmulation", mobile)
         
-        temp = os.path.join(tempfile.gettempdir(), f"v107_{agent_id}_{int(time.time())}")
+        temp = os.path.join(tempfile.gettempdir(), f"v108_{agent_id}_{int(time.time())}")
         options.add_argument(f"--user-data-dir={temp}")
         
         driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
@@ -42,7 +42,7 @@ def run_life_cycle(agent_id, cookie, target_id, target_name):
         driver = None
         session_start = time.time()
         try:
-            print(f"[{agent_id}] 🚀 Launching Internal Engine...", flush=True)
+            print(f"[{agent_id}] 🚀 Launching Fire-Forget Engine...", flush=True)
             driver = get_driver(agent_id)
             driver.get("https://www.instagram.com/")
             
@@ -56,32 +56,34 @@ def run_life_cycle(agent_id, cookie, target_id, target_name):
                 try:
                     box = driver.find_element(By.XPATH, "//div[@role='textbox']|//textarea")
                     
-                    # 🔥 V107 ULTRA-FAST INJECTOR: Logic is now inside the Browser
-                    driver.execute_script("""
-                        const el = arguments[0];
-                        const name = arguments[1];
-                        const emojis = ["👑", "⚡", "🔥", "🦈", "🦁", "💎", "⚔️", "🔱"];
-                        
-                        // 🛠️ Internal Block Builder (Zero Latency)
-                        const emoji = emojis[Math.floor(Math.random() * emojis.length)];
-                        const salt = Math.random().toString(36).substring(7).toUpperCase();
-                        const line = `【 ${name} 】 SAY P R V R बाप ${emoji} ________________________/`;
-                        const block = Array(20).fill(line).join('\\n') + "\\n⚡ ID: " + salt;
+                    # 🛠️ PRE-GENERATE DATA (Python-Side for Zero-JS Overhead)
+                    emojis = ["👑", "⚡", "🔥", "🦈", "🦁", "💎", "⚔️", "🔱"]
+                    emoji = random.choice(emojis)
+                    salt = random.randint(1000, 9999)
+                    line = f"【 {target_name} 】 SAY P R V R बाप {emoji} ________________________/"
+                    block = "\\n".join([line for _ in range(20)]) + f"\\n⚡ ID: {salt}"
 
+                    # 🔥 THE "FIRE & FORGET" INJECTOR
+                    # execute_async_script allows Python to continue without waiting for a return
+                    driver.execute_script(f"""
+                        const el = arguments[0];
+                        const txt = `{block}`;
                         el.focus();
-                        document.execCommand('insertText', false, block);
+                        document.execCommand('insertText', false, txt);
+                        el.dispatchEvent(new Event('input', {{ bubbles: true }}));
                         
-                        // Wipe memory 2ms after send
-                        setTimeout(() => { if(el) el.innerHTML = ""; }, 2);
-                    """, box, target_name)
-                    
-                    # ⚡ Native Send
-                    box.send_keys(Keys.ENTER)
+                        // Native Dispatch for Enter
+                        const e = new KeyboardEvent('keydown', {{bubbles:true, key:'Enter', code:'Enter', keyCode:13}});
+                        el.dispatchEvent(e);
+                        
+                        // Wipe DOM memory immediately
+                        setTimeout(() => {{ if(el) el.innerHTML = ""; }}, 2);
+                    """, box)
                     
                 except:
                     break 
                 
-                # ⚡ Zero-Gravity Delay
+                # ⚡ Minimal pause to keep the CPU from redlining
                 time.sleep(random.uniform(BURST_MIN, BURST_MAX))
                 
         except Exception as e:
