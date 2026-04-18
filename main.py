@@ -52,7 +52,7 @@ def run_agent(agent_id, cookie, target_id, target_name):
             handles = driver.window_handles[1:]
             for handle in handles:
                 driver.switch_to.window(handle)
-                # ⚡ UPDATED ENGINE: Exact Layout + Rotating Flowers
+                # ⚡ IMPERIAL PILLAR ENGINE (Option 6)
                 driver.execute_script("""
                     const name = arguments[0];
                     const delay = arguments[1];
@@ -61,17 +61,20 @@ def run_agent(agent_id, cookie, target_id, target_name):
                         const flowers = ["🌸", "🌹", "🌷", "🌻", "🌺", "🌼", "💐"];
                         const flo = flowers[Math.floor(Math.random() * flowers.length)];
                         const separator = "──────────────\\n";
+                        const heavyBar = "▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓\\n";
                         
-                        // Header
-                        let content = `(${n}) ${flo} P R V R पापा से CUD\\n`;
+                        // Header: Crown + Trident + Target + Rotating Flower
+                        let content = `🔱👑 (${n}) ${flo} P R V R पापा से CUD 👑🔱\\n`;
+                        content += heavyBar;
                         
-                        // 15 Blocks of separators
+                        // 15 Separator lines
                         for(let i=0; i<15; i++) { 
                             content += separator; 
                         }
                         
-                        // Footer
-                        content += `(${n}) ${flo} P R V R पापा से CUD`;
+                        // Footer: Heavy Bar + Crown + Trident + Target
+                        content += heavyBar;
+                        content += `🔱👑 (${n}) ${flo} P R V R पापा से CUD 👑🔱`;
                         
                         return content;
                     }
@@ -94,7 +97,7 @@ def run_agent(agent_id, cookie, target_id, target_name):
                     }, delay);
                 """, target_name, PULSE_DELAY)
 
-            print(f"🔥 [Agent {agent_id}] Bursting Layout... (Reset in 120s)")
+            print(f"🔥 [Agent {agent_id}] Bursting Imperial Layout... (Reset in 120s)")
             time.sleep(SESSION_MAX_SEC) 
 
         except Exception as e:
@@ -107,7 +110,7 @@ def run_agent(agent_id, cookie, target_id, target_name):
 def main():
     cookie = os.environ.get("INSTA_COOKIE")
     target_id = os.environ.get("TARGET_THREAD_ID")
-    target_name = os.environ.get("TARGET_NAME", "PRVR") # Pulls from GitHub Secrets
+    target_name = os.environ.get("TARGET_NAME", "PRVR") 
 
     if not cookie or not target_id:
         print("❌ Missing Secrets!")
